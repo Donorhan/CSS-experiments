@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Fluids</title>
+        <meta charset="utf-8">
+        <meta name="description" content="CSS Experiments #1" />
+        <meta property="og:image" content="http://dorhan.fr/Experiments/assets/img/fluids_thumbnail.png" />
+        <meta property="og:title" content="Fluids" />
+        <meta property="og:description" content="CSS Experiments #1" />
+        <style type="text/css">
+
+        body
+        {
+            background  : linear-gradient(to right, rgba(80,83,99,1) 0%, rgba(62,66,77,1) 100%);
+        }
+
+        #container
+        {
+            background : white;
+            position: relative; 
+            margin: 50px auto; 
+            margin-bottom: 20px;
+            width: 400px; 
+            height: 400px; 
+            border: 1px solid black;
+            overflow : hidden; 
+            -webkit-box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+            -moz-box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+            box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+        }
+
+        #simulation
+        {
+            -webkit-filter  : url('#blob');   
+
+            /* Hack: Enable GPU acceleration */   
+            -webkit-transform: translateZ(0);
+            -webkit-perspective: 1000;
+            -webkit-backface-visibility: hidden;
+            -webkit-transform: preserve-3d; 
+        }
+
+        .blob
+        {
+            display         : block;
+            width           : 20px;
+            height          : 20px;
+            position        : absolute;
+            border-radius   : 50px;
+        }
+
+        #options
+        {
+            width: 500px; 
+            margin: 0 auto;
+            text-align  : center;
+        }
+        </style>
+    </head>
+    <body>
+
+        <div id="container">
+            <div id="simulation"></div>
+        </div>
+
+        <div id="options">
+            <button id="button_color">Color</button>
+            <button id="button_blackhole">Black Hole</button>
+            <button id="button_usegravity">Gravity</button>
+        </div>
+
+        <script>
+
+        // Data.
+        var blobs   = [];
+        var parent  = document.getElementById("simulation");
+
+        // Configuration.
+        var blobsCount  = 70;
+        var parentSize  = parent.offsetWidth;
+
+        // Create blobs.
+        for( var i = 0; i < blobsCount; i++ )
+        {
+            randomColor = "#ff5722";
+            blobs[i] = { vx: (Math.random() * 3), vy: (Math.random() * 3), x : (Math.random() * parentSize), y : (Math.random() * parentSize), color: randomColor, radius: 1 + (Math.random() * 3), restitution: 1 };
+        }
+
+        /**
+        * Colors part
+        */
+        function activateColors( mode )
+        {
+            var color = "#03a9f4";
+            if( mode == 1 )
+                color = "#5af158";
+            else if( mode == 2 )
+                color = "#ffc107";
+            else if( mode == 3 )
+                color = "#ff5722";
+
+            for( var i = 0; i < blobsCount; i++ )
+            {
+                if( mode == 4 )
+                {                    
+                    var r = Math.floor((Math.random() * 4));
+                    if( r == 1 )
+                        color = "#03a9f4";
+                    else if( r == 2 )
+                        color = "#5af158";
+                    else if( r == 3 )
+                        color = "#ffc107";
+                    else
+                        color = "#ff5722";
+                }
+
+                blobs[i].color = color;
+            }
+        };
+
+        var currentColorMode    = 1;
+        var colorSwitcher       = document.getElementById("button_color");
+        colorSwitcher.onclick = function()
+        {
+            activateColors(currentColorMode);
+
+            currentColorMode++;
+            if( currentColorMode > 4 )
+                currentColorMode = 0;
+        }
+        activateColors();
+
+        /**
+        * Black hole part
+        */
+        var useBlackHole        = false;
+        var blackHolePosition   = [parentSize * 0.5, parentSize * 0.5];
+        var blackHoleMass       = 0.005;
+
+        function applyBlackHole()
+        {
+            var force = [0, 0];
+
+            for( var i = 0; i < blobsCount; i++ )
+            {
+                force[0]     = (blackHolePosition[0] - blobs[i].x) * blackHoleMass;
+                force[1]     = (blackHolePosition[1] - blobs[i].y) * blackHoleMass;
+                blobs[i].vx  += force[0];
+                blobs[i].vy  += force[1];
+            }
+        };
+
+        var blackHoleSwitcher = document.getElementById("button_blackhole");
+        blackHoleSwitcher.onclick = function()
+        {
+            useBlackHole = !useBlackHole;
+            if( !useBlackHole )
+            {
+                // Slow down.
+                for( var i = 0; i < blobsCount; i++ )
+                {
+                    blobs[i].vx  *= 0.25;
+                    blobs[i].vy  *= 0.25;
+                }
+            }
+        }
+
+        /**
+        * Gravity
+        */
+        var useGravity          = false;
+        var gravityForce        = 0.1;
+
+        function applyGravity()
+        {
+            var force = [0, 0];
+
+            for( var i = 0; i < blobsCount; i++ )
+            {
+                blobs[i].vy  += gravityForce;
+            }
+        };
+
+        var useGravitySwitcher = document.getElementById("button_usegravity");
+        useGravitySwitcher.onclick = function()
+        {
+            useGravity = !useGravity;
+            if( !useGravity )
+                for( var i = 0; i < blobsCount; i++ )
+                    blobs[i].restitution  = 0.80;
+            else 
+                for( var i = 0; i < blobsCount; i++ )
+                    blobs[i].restitution  = 0.25;
+        }
+
+        // Main loop.
+        function step() 
+        {
+            window.requestAnimationFrame(step);
+
+            // Options.
+            if( useBlackHole )
+                applyBlackHole();
+
+            if( useGravity )
+                applyGravity();
+
+            // Manage collisions.
+            for( var i = 0; i < blobsCount; i++ )
+            {
+                if( blobs[i].x <= 0 )
+                    blobs[i].vx = Math.abs(blobs[i].vx) * blobs[i].restitution;
+                else if( blobs[i].x >= parentSize - blobs[i].radius)
+                    blobs[i].vx = -Math.abs(blobs[i].vx) * blobs[i].restitution;
+
+                if( blobs[i].y <= 0 )
+                    blobs[i].vy = Math.abs(blobs[i].vy) * blobs[i].restitution;
+                else if( blobs[i].y >= parentSize - blobs[i].radius  )
+                    blobs[i].vy = -Math.abs(blobs[i].vy) * blobs[i].restitution;
+            }
+
+            // Update position.
+            for( var i = 0; i < blobsCount; i++ )
+            {
+                blobs[i].x += blobs[i].vx;
+                blobs[i].y += blobs[i].vy;
+            }
+
+            // Update graphics.
+            var string = '';
+            for( var i = 0; i < blobsCount; i++ )
+                string += '<i class="blob" style="transform:translate(' + blobs[i].x + 'px,'+ blobs[i].y+'px) scale('+ blobs[i].radius +',' + blobs[i].radius+ ');background-color:' + blobs[i].color + ';"></i>';
+
+            parent.innerHTML = string;
+        }
+        window.requestAnimationFrame(step);
+
+        </script>
+
+        <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+          <defs>
+                <filter id="blob">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"></feGaussianBlur>
+                  <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="blob"></feColorMatrix>
+                </filter>
+          </defs>
+        </svg>
+
+    </body>
+</html>

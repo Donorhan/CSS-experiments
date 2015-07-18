@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Glutton</title>
+        <meta charset="utf-8">
+        <meta name="description" content="CSS Experiments #2" />
+        <meta property="og:image" content="http://dorhan.fr/Experiments/assets/img/glutton_thumbnail.png" />
+        <meta property="og:title" content="Glutton" />
+        <meta property="og:description" content="CSS Experiments #2" />
+        <style type="text/css">
+
+        body
+        {
+            background  : linear-gradient(to right, rgba(80,83,99,1) 0%, rgba(62,66,77,1) 100%);
+        }
+
+        #container
+        {
+            background : white;
+            position: relative; 
+            margin: 50px auto; 
+            margin-bottom: 20px;
+            width: 500px; 
+            height: 500px; 
+            border: 1px solid black;
+            overflow : hidden; 
+            -webkit-box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+            -moz-box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+            box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+            cursor: none;
+        }
+
+        #simulation
+        {   
+            -webkit-filter  : url('#blob');  
+            -webkit-transform: translateZ(0);
+            -webkit-perspective: 1000;
+            -webkit-backface-visibility: hidden;
+            -webkit-transform: preserve-3d; 
+        }
+
+        .blob
+        {
+            display         : block;
+            width           : 20px;
+            height          : 20px;
+            position        : absolute;
+            border-radius   : 50px;
+        }
+
+        #options
+        {
+            width: 500px; 
+            margin: 0 auto;
+            text-align  : center;
+        }
+
+        </style>
+    </head>
+    <body>
+
+        <div id="container">
+            <div id="simulation"></div>
+        </div>
+
+        <div id="options">
+            <button id="button_food">Food</button>
+        </div>
+
+        <script>
+
+        // Data.
+        var blobs           = [];
+        var container       = document.getElementById("container");
+        var parent          = document.getElementById("simulation");
+        var mousePosition   = { x: 0, y: 0 };
+        var currentStep     = 1;
+
+        // Configuration.
+        var parentSize  = parent.offsetWidth;
+
+        // Create player.
+        var playerColor     = "#ff5722";
+        var playerSpeed     = 0.04;
+        var playerGrowSpeed = 0.04;
+        var playerGrowColorSpeed = 0.02;
+        var playerNewSize   = 2.5;
+        var dieSpeed        = 0.05;
+        blobs[0]            = { vx: 0, vy: 0, x : parentSize / 2.0 - 10, y : parentSize / 2.0 - 10, color: {h: 14, s: 100, l: 57, a: 1}, radius: 2.0, restitution: 1, alive: true, dying: false };
+
+        // others.
+        function spawnFood()
+        {
+            var x = 0;
+            var y = 0;
+            var d = 0;
+
+            // Find available position.
+            while( d < 100 )
+            {
+                x = Math.random() * parentSize;
+                y = Math.random() * parentSize;
+                d = Math.sqrt( Math.abs(Math.pow(x - blobs[0].x, 2) - Math.pow(y - blobs[0].y, 2)));
+            }
+
+            blobs[blobs.length] = { vx: 0, vy: 0, x : x, y : y, color: {h: 45, s: 100, l: 51, a: 1}, radius: 1.5, restitution: 1, alive: true, dying: false };
+        }
+
+        // Events.
+        container.onmousemove = function( event )
+        {
+            mousePosition.x = event.clientX - container.offsetLeft;
+            mousePosition.y = event.clientY - container.offsetTop;
+        };
+
+        var foodButton = document.getElementById("button_food");
+        foodButton.onclick = function()
+        {
+            for( var i = 0; i < 15; i++ )
+                spawnFood();
+        }
+
+        // Collisions
+        function checkCollisions()
+        {
+            var player = blobs[0];
+
+            for( var i = 1; i < blobs.length; i++ )
+            {
+                if( blobs[i].alive )
+                {
+                    var diff = Math.sqrt( Math.abs(Math.pow(player.x - blobs[i].x, 2) + Math.pow(player.y - blobs[i].y, 2)));
+                    var min  = Math.abs(Math.pow(player.radius + blobs[i].radius, 2));
+
+                    if( diff <= min )
+                    {
+                        blobs[0].color.h = 38;
+                        blobs[0].color.l = 55;
+                        playerNewSize  = blobs[0].radius + 0.25;
+                        blobs[i].dying = true;
+                    }
+                }
+            }
+        }
+
+        // Main loop.
+        function step() 
+        {
+            window.requestAnimationFrame(step);
+
+            // Move player.
+            blobs[0].x += (mousePosition.x - blobs[0].x) * playerSpeed;
+            blobs[0].y += (mousePosition.y - blobs[0].y) * playerSpeed;
+
+            // Manage collisions.
+            for( var i = 0; i < blobs.length; i++ )
+            {
+                if( blobs[i].x <= 0 )
+                    blobs[i].vx = Math.abs(blobs[i].vx) * blobs[i].restitution;
+                else if( blobs[i].x >= parentSize - blobs[i].radius)
+                    blobs[i].vx = -Math.abs(blobs[i].vx) * blobs[i].restitution;
+
+                if( blobs[i].y <= 0 )
+                    blobs[i].vy = Math.abs(blobs[i].vy) * blobs[i].restitution;
+                else if( blobs[i].y >= parentSize - blobs[i].radius  )
+                    blobs[i].vy = -Math.abs(blobs[i].vy) * blobs[i].restitution;
+            }
+
+            // Update position.
+            for( var i = 0; i < blobs.length; i++ )
+            {
+                blobs[i].x += blobs[i].vx;
+                blobs[i].y += blobs[i].vy;
+            }
+
+            // Physic.
+            checkCollisions();
+
+            // Apply dead effect.
+            for( var i = 0; i < blobs.length; i++ )
+            {
+                if( blobs[i].alive && blobs[i].dying )
+                {
+                    blobs[i].color.a -= dieSpeed;
+                    if( blobs[i].color.a <= 0 )
+                        blobs[i].alive = false;
+                }
+            }
+
+            // Apply grow effect.
+            blobs[0].color.h    += (14 - blobs[0].color.h) * playerGrowColorSpeed;
+            blobs[0].color.l    += (57 - blobs[0].color.l) * playerGrowColorSpeed;
+            blobs[0].radius     += (playerNewSize - blobs[0].radius) * playerGrowSpeed;
+
+            // Update graphics.
+            var string = '';
+            for( var i = blobs.length - 1; i >= 0; i-- )
+            {
+                if( blobs[i].alive )
+                {
+                    var color = blobs[i].color.h + ', ' + blobs[i].color.s + '%, ' + blobs[i].color.l + '%, ' + blobs[i].color.a;
+                    string += '<i class="blob" style="transform:translate(' + blobs[i].x + 'px,'+ blobs[i].y+'px) scale('+ blobs[i].radius +',' + blobs[i].radius+ ');background-color: hsla(' + color + ');"></i>';
+                }
+            }
+
+            parent.innerHTML = string;
+        }
+        window.requestAnimationFrame(step);
+
+        </script>
+
+        <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+          <defs>
+                <filter id="blob">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"></feGaussianBlur>
+                  <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="blob"></feColorMatrix>
+                </filter>
+          </defs>
+        </svg>
+
+    </body>
+</html>
