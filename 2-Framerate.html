@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Framerate</title>
+        <meta charset="utf-8">
+        <meta name="description" content="CSS Experiments #3" />
+        <meta property="og:image" content="http://dorhan.fr/Experiments/assets/img/framerate_thumbnail.png" />
+        <meta property="og:title" content="Fluids" />
+        <meta property="og:description" content="CSS Experiments #3" />
+        <style type="text/css">
+
+        body
+        {
+            background  : linear-gradient(to right, rgba(80,83,99,1) 0%, rgba(62,66,77,1) 100%);
+        }
+
+        #container
+        {
+            background : white;
+            position: relative; 
+            margin: 50px auto; 
+            margin-bottom: 20px;
+            width: 600px; 
+            height: 200px; 
+            border: 1px solid black;
+            overflow : hidden; 
+            -webkit-box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+            -moz-box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+            box-shadow: 0px 0px 42px -5px rgba(0,0,0,0.75);
+            cursor: none;
+        }
+
+        .blob
+        {
+            display         : block;
+            width           : 60px;
+            height          : 60px;
+            position        : absolute;
+            border-radius   : 50px;
+            background-color : blue;
+        }
+
+        </style>
+    </head>
+    <body>
+
+        <div id="container">
+            <div id="simulation">                
+                <div id="object1" class="blob"></div>
+                <div id="object2" class="blob"></div>
+            </div>
+        </div>
+
+        <script>
+
+        var simulation  = document.getElementById("simulation");
+        var object1     = document.getElementById("object1");
+        var object2     = document.getElementById("object2");
+        var t1          = 0;
+        var t2          = 0;
+        var time1       = 0;
+        var time2       = 0;
+        var x1          = 0;
+        var x2          = 0;
+
+        // Main loop.
+        function step() 
+        {
+            window.requestAnimationFrame(step);
+
+            var now = new Date().getTime(),
+            dt      = now - (time1 || now);
+            time1   = now;
+
+            x1 += (Math.sin(t1) * dt) / 1.5;
+            object1.style.webkitTransform = 'translate(' + (150 + x1) + 'px,'+ 110+'px)';
+
+            t1 += dt / 200;
+        }
+        window.requestAnimationFrame(step);
+
+        var ONE_FRAME_TIME = 1000 / 30;
+        var mainloop = function() 
+        {
+            var now = new Date().getTime(),
+            dt      = now - (time1 || now);
+            time1   = now;
+
+            x1 += (Math.sin(t1) * dt) / 1.5;
+            object2.style.webkitTransform = 'translate(' + (150 + x1) + 'px,'+ 30+'px)';
+
+            t1 += dt / 200;
+        };
+        setInterval( mainloop, ONE_FRAME_TIME );
+
+        </script>
+    </body>
+</html>
